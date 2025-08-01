@@ -1,11 +1,24 @@
 import type { Config } from "tailwindcss";
+import flattenColorPalette from "tailwindcss/lib/util/flattenColorPalette";
 
-export default {
+function addVariablesForColors({ addBase, theme }: any) {
+  let allColors = flattenColorPalette(theme("colors"));
+  let newVars = Object.fromEntries(
+    Object.entries(allColors).map(([key, val]) => [`--${key}`, val])
+  );
+
+  addBase({
+    ":root": newVars,
+  });
+}
+
+const config: Config = {
   content: [
     "./app/**/*.{ts,tsx}",
     "./components/**/*.{ts,tsx}",
     "./src/**/*.{ts,tsx}",
   ],
+  darkMode: "class",
   theme: {
     extend: {
       borderRadius: {
@@ -33,7 +46,7 @@ export default {
         border: "var(--color-border)",
         input: "var(--color-input)",
         ring: "var(--color-ring)",
-        "sidebar": "var(--color-sidebar)",
+        sidebar: "var(--color-sidebar)",
         "sidebar-foreground": "var(--color-sidebar-foreground)",
         "sidebar-primary": "var(--color-sidebar-primary)",
         "sidebar-primary-foreground": "var(--color-sidebar-primary-foreground)",
@@ -51,8 +64,22 @@ export default {
         sans: "var(--font-sans)",
         mono: "var(--font-mono)",
       },
+      animation: {
+        aurora: "aurora 60s linear infinite",
+      },
+      keyframes: {
+        aurora: {
+          from: {
+            backgroundPosition: "50% 50%, 50% 50%",
+          },
+          to: {
+            backgroundPosition: "350% 50%, 350% 50%",
+          },
+        },
+      },
     },
   },
-  darkMode: "class",
-  plugins: [],
-} satisfies Config;
+  plugins: [addVariablesForColors],
+};
+
+export default config;
