@@ -1,7 +1,7 @@
 export {}
 
 // Create a type for the roles
-export type Roles = 'admin' | 'hod' | 'dean' | 'tpo' | 'director' | 'mentor' | 'student'
+export type Roles = 'admin' | 'hs_hod' | 'cse_hod' | 'csm_hod' | 'csd_hod' | 'ece_hod' | 'dean' | 'tpo' | 'director' | 'mentor' | 'student'
 type ApprovalStatus = 'pending' | 'approved' | 'rejected';
 
 declare global {

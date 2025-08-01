@@ -1,6 +1,7 @@
 import { clerkMiddleware, createRouteMatcher } from '@clerk/nextjs/server';
 import { NextResponse } from 'next/server';
 import { hasUserProfile } from './lib/actions/user.actions';
+import { areAllApprovalsComplete } from './lib/actions/approval.actions';
 
 // Define public routes that don't require authentication.
 const isPublicRoute = createRouteMatcher([
@@ -45,15 +46,20 @@ export default clerkMiddleware(async (auth, req) => {
 
   // 2. If onboarding IS complete, handle redirects based on status.
   if (onboardingComplete) {
-    // If pending and not at the pending page, redirect there.
-    if (approvalStatus === 'pending' && !isAtPending) {
+    // Double-check if all approvals are actually complete (security measure)
+    const allApprovalsComplete = await areAllApprovalsComplete(userId);
+    
+    // If not all approvals are complete, force redirect to pending-approval
+    if (!allApprovalsComplete && !isAtPending) {
       return NextResponse.redirect(new URL('/pending-approval', req.url));
     }
-    // If approved and on a restricted page, redirect to dashboard.
-    if (approvalStatus === 'approved' && (isAtOnboarding || isAtPending)) {
+    
+    // If all approvals are complete and on restricted pages, redirect to dashboard
+    if (allApprovalsComplete && (isAtOnboarding || isAtPending)) {
       return NextResponse.redirect(new URL('/dashboard', req.url));
     }
-    // If onboarded and trying to access onboarding, redirect away.
+    
+    // If onboarded but not all approvals complete, redirect to pending-approval
     if (isAtOnboarding) {
       return NextResponse.redirect(new URL('/pending-approval', req.url));
     }

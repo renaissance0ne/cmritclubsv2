@@ -23,10 +23,10 @@ export default function SignInPage(): ReactElement {
             By signing in, you agree to our <a href="/terms" className="text-purple-400 hover:text-purple-300">Terms of Service</a> and <a href="/privacy" className="text-purple-400 hover:text-purple-300">Privacy Policy</a>.
           </p>
           <p className="text-gray-400 text-sm mt-4">
-            CMritClub provides secure access to your data. We use industry-standard encryption to protect your information.
+            cmritclub provides secure access to your data. We use industry-standard encryption to protect your information.
           </p>
           <p className="text-gray-500 text-xs mt-6">
-            © 2025 CMritClub. All rights reserved.
+            © 2025 cmritclub. All rights reserved.
           </p>
         </div>
       </div>

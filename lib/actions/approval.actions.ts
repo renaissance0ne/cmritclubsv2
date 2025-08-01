@@ -4,7 +4,92 @@ import { clerkClient, auth, currentUser } from "@clerk/nextjs/server";
 import { createClient } from "@/lib/supabase/server";
 import { revalidatePath } from "next/cache";
 
-const REQUIRED_APPROVALS = ['hod', 'dean', 'tpo', 'director'];
+const REQUIRED_APPROVALS = [
+  'hs_hod',    // H&S HOD
+  'cse_hod',   // CSE HOD  
+  'csm_hod',   // CSM HOD
+  'csd_hod',   // CSD HOD
+  'ece_hod',   // ECE HOD
+  'tpo',       // TPO
+  'dean',      // Dean
+  'director'   // Director
+];
+
+// Action for an official to approve or reject a request
+// Get detailed approval status for a profile
+export async function getDetailedApprovalStatus(profileId: string) {
+  try {
+    const supabase = await createClient();
+    
+    // Get all approvals for this profile
+    const { data: approvals, error } = await supabase
+      .from('approvals')
+      .select('official_role, status, comment, created_at')
+      .eq('profile_id', profileId);
+
+    if (error) throw error;
+
+    // Create a map of official statuses
+    const approvalMap: Record<string, { status: 'pending' | 'approved' | 'rejected', comment?: string, date?: string }> = {};
+    
+    // Initialize all required approvals as pending
+    REQUIRED_APPROVALS.forEach(role => {
+      approvalMap[role] = { status: 'pending' };
+    });
+    
+    // Update with actual approvals
+    approvals?.forEach(approval => {
+      if (REQUIRED_APPROVALS.includes(approval.official_role)) {
+        approvalMap[approval.official_role] = {
+          status: approval.status as 'approved' | 'rejected',
+          comment: approval.comment,
+          date: approval.created_at
+        };
+      }
+    });
+    
+    return { success: true, data: approvalMap };
+  } catch (error) {
+    console.error('Error getting detailed approval status:', error);
+    return { success: false, error: error instanceof Error ? error.message : 'An unknown error occurred' };
+  }
+}
+
+// Check if all required approvals are complete for a user
+export async function areAllApprovalsComplete(clerkId: string): Promise<boolean> {
+  try {
+    const supabase = await createClient();
+    
+    // First get the user's profile
+    const { data: profile, error: profileError } = await supabase
+      .from('profiles')
+      .select('id, approval_status')
+      .eq('clerk_id', clerkId)
+      .single();
+    
+    if (profileError || !profile) return false;
+    
+    // If already marked as approved in profile, double-check with approvals table
+    if (profile.approval_status !== 'approved') return false;
+    
+    // Get all approvals for this profile
+    const { data: approvals, error: approvalsError } = await supabase
+      .from('approvals')
+      .select('official_role, status')
+      .eq('profile_id', profile.id)
+      .eq('status', 'approved');
+    
+    if (approvalsError) return false;
+    
+    // Check if all required roles have approved
+    const approvedRoles = approvals?.map(a => a.official_role) || [];
+    return REQUIRED_APPROVALS.every(role => approvedRoles.includes(role));
+    
+  } catch (error) {
+    console.error('Error checking approval completeness:', error);
+    return false;
+  }
+}
 
 // Action for an official to approve or reject a request
 export async function updateApprovalStatus({ profileId, newStatus, comment }: { profileId: string, newStatus: 'approved' | 'rejected', comment?: string }) {
