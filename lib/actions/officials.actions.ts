@@ -62,14 +62,26 @@ export async function getClubApplicationsForOfficial(officialRole: string, depar
       .select('*')
       .order('created_at', { ascending: false });
 
-    // If it's a HOD, filter by department
-    if (department && officialRole.includes('_hod')) {
-      query = query.eq('department', department.toUpperCase());
-    }
+    // HODs and general officials see all applications (no department filtering)
+    console.log(`Getting all applications for ${officialRole} (no department filtering)`);
+    
+    // Debug: Show available departments in database
+    const { data: allApps } = await supabase
+      .from('profiles')
+      .select('department')
+      .not('department', 'is', null);
+    
+    console.log('Available departments in database:', [...new Set(allApps?.map(app => app.department) || [])]);
+    
+    // No filtering - all officials see all applications
 
     const { data: applications, error } = await query;
-    if (error) throw error;
+    if (error) {
+      console.error("Database error in getClubApplicationsForOfficial:", error);
+      throw error;
+    }
 
+    console.log(`Found ${applications?.length || 0} applications for ${officialRole}`);
     return applications as ClubApplication[];
   } catch (error) {
     console.error("Error getting club applications:", error);

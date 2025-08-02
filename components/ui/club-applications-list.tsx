@@ -54,6 +54,11 @@ export function ClubApplicationsList({
   const [loadingStates, setLoadingStates] = useState<Record<string, boolean>>({});
   const [comments, setComments] = useState<Record<string, string>>({});
 
+  // Add safety checks for undefined arrays
+  const safePending = pending || [];
+  const safeApproved = approved || [];
+  const safeRejected = rejected || [];
+
   const handleStatusUpdate = async (
     profileId: string, 
     status: 'approved' | 'rejected',
@@ -200,24 +205,24 @@ export function ClubApplicationsList({
         <TabsList className="grid w-full grid-cols-3">
           <TabsTrigger value="pending" className="flex items-center space-x-2">
             <Clock className="w-4 h-4" />
-            <span>Pending ({pending.length})</span>
+            <span>Pending ({safePending.length})</span>
           </TabsTrigger>
           <TabsTrigger value="approved" className="flex items-center space-x-2">
             <CheckCircle className="w-4 h-4" />
-            <span>Approved ({approved.length})</span>
+            <span>Approved ({safeApproved.length})</span>
           </TabsTrigger>
           <TabsTrigger value="rejected" className="flex items-center space-x-2">
             <XCircle className="w-4 h-4" />
-            <span>Rejected ({rejected.length})</span>
+            <span>Rejected ({safeRejected.length})</span>
           </TabsTrigger>
         </TabsList>
 
         <TabsContent value="pending" className="mt-6">
-          {pending.length === 0 ? (
+          {safePending.length === 0 ? (
             <EmptyState message="No pending applications to review" />
           ) : (
             <div>
-              {pending.map((application) => (
+              {safePending.map((application) => (
                 <ApplicationCard 
                   key={application.id} 
                   application={application} 
@@ -229,11 +234,11 @@ export function ClubApplicationsList({
         </TabsContent>
 
         <TabsContent value="approved" className="mt-6">
-          {approved.length === 0 ? (
+          {safeApproved.length === 0 ? (
             <EmptyState message="No approved applications" />
           ) : (
             <div>
-              {approved.map((application) => (
+              {safeApproved.map((application) => (
                 <ApplicationCard 
                   key={application.id} 
                   application={application} 
@@ -244,11 +249,11 @@ export function ClubApplicationsList({
         </TabsContent>
 
         <TabsContent value="rejected" className="mt-6">
-          {rejected.length === 0 ? (
+          {safeRejected.length === 0 ? (
             <EmptyState message="No rejected applications" />
           ) : (
             <div>
-              {rejected.map((application) => (
+              {safeRejected.map((application) => (
                 <ApplicationCard 
                   key={application.id} 
                   application={application} 
