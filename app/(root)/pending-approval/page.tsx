@@ -82,7 +82,32 @@ export default async function PendingApprovalPage() {
   }
 
   const approvalStatuses = approvalResult.data || {};
-  const overallStatus = profile.approval_status as 'pending' | 'approved' | 'rejected';
+  
+  // Extract overall status from the JSON structure
+  let overallStatus: 'pending' | 'approved' | 'rejected' = 'pending';
+  
+  if (profile.approval_status) {
+    const approvalStatusJson = typeof profile.approval_status === 'string' 
+      ? JSON.parse(profile.approval_status) 
+      : profile.approval_status;
+    
+    // Check if overall_status exists in the JSON
+    if (approvalStatusJson.overall_status) {
+      overallStatus = approvalStatusJson.overall_status as 'pending' | 'approved' | 'rejected';
+    } else {
+      // If no overall_status, determine based on individual approvals
+      const hasRejected = Object.values(approvalStatuses).some((status: any) => status.status === 'rejected');
+      const allApproved = Object.values(approvalStatuses).every((status: any) => status.status === 'approved');
+      
+      if (hasRejected) {
+        overallStatus = 'rejected';
+      } else if (allApproved && Object.keys(approvalStatuses).length === Object.keys(OFFICIAL_DISPLAY_NAMES).length) {
+        overallStatus = 'approved';
+      } else {
+        overallStatus = 'pending';
+      }
+    }
+  }
   
   // Count approvals
   const totalOfficials = Object.keys(OFFICIAL_DISPLAY_NAMES).length;

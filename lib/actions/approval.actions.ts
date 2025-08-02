@@ -21,11 +21,12 @@ export async function getDetailedApprovalStatus(profileId: string) {
   try {
     const supabase = await createClient();
     
-    // Get all approvals for this profile
-    const { data: approvals, error } = await supabase
-      .from('approvals')
-      .select('official_role, status, comment, created_at')
-      .eq('profile_id', profileId);
+    // Get the profile with approval_status JSON field
+    const { data: profile, error } = await supabase
+      .from('profiles')
+      .select('approval_status')
+      .eq('id', profileId)
+      .single();
 
     if (error) throw error;
 
@@ -37,16 +38,36 @@ export async function getDetailedApprovalStatus(profileId: string) {
       approvalMap[role] = { status: 'pending' };
     });
     
-    // Update with actual approvals
-    approvals?.forEach(approval => {
-      if (REQUIRED_APPROVALS.includes(approval.official_role)) {
-        approvalMap[approval.official_role] = {
-          status: approval.status as 'approved' | 'rejected',
-          comment: approval.comment,
-          date: approval.created_at
-        };
-      }
-    });
+    // Parse the approval_status JSON and map to our structure
+    if (profile?.approval_status) {
+      const approvalStatus = typeof profile.approval_status === 'string' 
+        ? JSON.parse(profile.approval_status) 
+        : profile.approval_status;
+      
+      // Map the JSON keys to our required approval roles
+      const keyMapping: Record<string, string> = {
+        'hsHod': 'hs_hod',
+        'cseHod': 'cse_hod', 
+        'csmHod': 'csm_hod',
+        'csdHod': 'csd_hod',
+        'eceHod': 'ece_hod',
+        'tpo': 'tpo',
+        'dean': 'dean',
+        'director': 'director'
+      };
+      
+      // Update approval map with actual statuses
+      Object.entries(keyMapping).forEach(([jsonKey, roleKey]) => {
+        if (approvalStatus[jsonKey] && REQUIRED_APPROVALS.includes(roleKey)) {
+          const approval = approvalStatus[jsonKey];
+          approvalMap[roleKey] = {
+            status: approval.status as 'approved' | 'rejected',
+            comment: approval.comments || approval.comment,
+            date: approval.updated_at
+          };
+        }
+      });
+    }
     
     return { success: true, data: approvalMap };
   } catch (error) {
@@ -63,26 +84,42 @@ export async function areAllApprovalsComplete(clerkId: string): Promise<boolean>
     // First get the user's profile
     const { data: profile, error: profileError } = await supabase
       .from('profiles')
-      .select('id, approval_status')
+      .select('approval_status')
       .eq('clerk_id', clerkId)
       .single();
     
     if (profileError || !profile) return false;
     
-    // If already marked as approved in profile, double-check with approvals table
-    if (profile.approval_status !== 'approved') return false;
+    // Parse the approval_status JSON
+    if (!profile.approval_status) return false;
     
-    // Get all approvals for this profile
-    const { data: approvals, error: approvalsError } = await supabase
-      .from('approvals')
-      .select('official_role, status')
-      .eq('profile_id', profile.id)
-      .eq('status', 'approved');
+    const approvalStatus = typeof profile.approval_status === 'string' 
+      ? JSON.parse(profile.approval_status) 
+      : profile.approval_status;
     
-    if (approvalsError) return false;
+    // Check if overall_status is approved (if it exists)
+    if (approvalStatus.overall_status === 'approved') return true;
+    
+    // Otherwise, check if all required approvals are present and approved
+    const keyMapping: Record<string, string> = {
+      'hsHod': 'hs_hod',
+      'cseHod': 'cse_hod', 
+      'csmHod': 'csm_hod',
+      'csdHod': 'csd_hod',
+      'eceHod': 'ece_hod',
+      'tpo': 'tpo',
+      'dean': 'dean',
+      'director': 'director'
+    };
     
     // Check if all required roles have approved
-    const approvedRoles = approvals?.map(a => a.official_role) || [];
+    const approvedRoles: string[] = [];
+    Object.entries(keyMapping).forEach(([jsonKey, roleKey]) => {
+      if (approvalStatus[jsonKey] && approvalStatus[jsonKey].status === 'approved') {
+        approvedRoles.push(roleKey);
+      }
+    });
+    
     return REQUIRED_APPROVALS.every(role => approvedRoles.includes(role));
     
   } catch (error) {
