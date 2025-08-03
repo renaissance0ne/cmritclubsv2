@@ -6,6 +6,7 @@ export interface OfficialInfo {
   isOfficial: boolean;
   role?: string;
   displayName?: string;
+  college?: string;
 }
 
 // Middleware-safe function to check if a user is an official and get their role
@@ -15,7 +16,7 @@ export async function getUserOfficialInfo(clerkId: string): Promise<OfficialInfo
     
     const { data: official, error } = await supabase
       .from('officials')
-      .select('official_role, display_name')
+      .select('official_role, display_name, college')
       .eq('clerk_id', clerkId)
       .single();
 
@@ -26,7 +27,8 @@ export async function getUserOfficialInfo(clerkId: string): Promise<OfficialInfo
     return {
       isOfficial: true,
       role: official.official_role,
-      displayName: official.display_name
+      displayName: official.display_name,
+      college: official.college
     };
   } catch (error) {
     console.error("Error getting user official info:", error);

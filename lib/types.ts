@@ -1,10 +1,4 @@
-export {}
-
-// Create a type for the roles
-export type Roles = 'admin' | 'hs_hod' | 'cse_hod' | 'csm_hod' | 'csd_hod' | 'ece_hod' | 'dean' | 'tpo' | 'director' | 'mentor' | 'student'
-type ApprovalStatus = 'pending' | 'approved' | 'rejected';
-
-// College types for CMR Educational Group
+// Type definitions for CMR Educational Group institutions
 export type College = 'cmrit' | 'cmrcet' | 'cmrtc' | 'cmrec';
 export type Department = 'cse' | 'csm' | 'hs' | 'ece' | 'csd';
 export type HODRole = 'cse_hod' | 'csm_hod' | 'hs_hod' | 'ece_hod' | 'csd_hod';
@@ -32,13 +26,3 @@ export const DEPARTMENT_NAMES: Record<Department, string> = {
   ece: 'Electronics & Communication Engineering',
   csd: 'Computer Science & Data Science'
 };
-
-declare global {
-  interface CustomJwtSessionClaims {
-    publicMetadata: {
-      role?: Roles;
-      onboardingComplete?: boolean;
-      approvalStatus?: ApprovalStatus;
-    }
-  }
-}

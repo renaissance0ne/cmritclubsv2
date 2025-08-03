@@ -3,6 +3,16 @@ import { NextResponse } from 'next/server';
 import { hasUserProfile } from './lib/actions/user.actions';
 import { areAllApprovalsComplete } from './lib/actions/approval.actions';
 import { getUserOfficialInfo } from './lib/actions/middleware-helpers';
+import { 
+  validateHODRoute, 
+  validateGeneralRoute, 
+  validateClubRoute,
+  validateConsistentRoute,
+  isValidCollege,
+  isValidDepartment,
+  isValidHODRole,
+  isValidGeneralRole
+} from './lib/utils/route-validation';
 
 // Define public routes that don't require authentication.
 const isPublicRoute = createRouteMatcher([
@@ -76,17 +86,33 @@ export default clerkMiddleware(async (auth, req) => {
   // 2. If onboarding IS complete, handle redirects based on status.
   if (onboardingComplete) {
     if (isOfficial) {
-      // For officials, redirect to their appropriate dashboard
-      const isAtOfficialRoute = req.nextUrl.pathname.match(/^\/(hs|cse|csm|csd|ece)\/hod\/(dashboard|club-applications)/) ||
-                                req.nextUrl.pathname.match(/^\/(tpo|dean|director)\/(dashboard|club-applications)/);
+      // Check if user is at a valid dynamic route
+      const pathname = req.nextUrl.pathname;
+      const pathSegments = pathname.split('/').filter(Boolean);
       
-      if (!isAtOfficialRoute && !isAtOnboarding && !isAtPending) {
-        // Redirect to appropriate dashboard based on role
+      // Check for dynamic routes with new consistent structure
+      let isAtValidOfficialRoute = false;
+      
+      if (pathSegments.length === 4 && pathSegments[3] === 'dashboard') {
+        // Consistent route: [college]/[type]/[identifier]/dashboard
+        const [college, type, identifier] = pathSegments;
+        const validation = validateConsistentRoute(college, type, identifier);
+        isAtValidOfficialRoute = validation.isValid;
+      } else if (pathSegments.length === 4 && pathSegments[3] === 'club-applications') {
+        // Consistent route: [college]/[type]/[identifier]/club-applications
+        const [college, type, identifier] = pathSegments;
+        const validation = validateConsistentRoute(college, type, identifier);
+        isAtValidOfficialRoute = validation.isValid;
+      }
+      
+      if (!isAtValidOfficialRoute && !isAtOnboarding && !isAtPending) {
+        // Redirect to appropriate dashboard based on role and college
+        const officialCollege = officialInfo.college || 'cmrit'; // Default fallback
+        
         if (userRole && userRole.includes('_hod')) {
-          const dept = userRole.replace('_hod', '');
-          return NextResponse.redirect(new URL(`/${dept}/hod/dashboard`, req.url));
-        } else if (userRole) {
-          return NextResponse.redirect(new URL(`/${userRole}/dashboard`, req.url));
+          return NextResponse.redirect(new URL(`/${officialCollege}/hod/${userRole}/dashboard`, req.url));
+        } else if (userRole && (userRole === 'tpo' || userRole === 'dean' || userRole === 'director' || userRole === 'admin')) {
+          return NextResponse.redirect(new URL(`/${officialCollege}/official/${userRole}/dashboard`, req.url));
         }
         // If no role available, redirect to sign-in
         return NextResponse.redirect(new URL('/sign-in', req.url));
@@ -100,14 +126,32 @@ export default clerkMiddleware(async (auth, req) => {
         return NextResponse.redirect(new URL('/pending-approval', req.url));
       }
       
-      // If all approvals are complete and on restricted pages, redirect to dashboard
+      // Check if student is at a valid college dashboard route
+      const pathname = req.nextUrl.pathname;
+      const pathSegments = pathname.split('/').filter(Boolean);
+      let isAtValidStudentRoute = false;
+      
+      if (pathSegments.length === 2 && pathSegments[1] === 'dashboard') {
+        // Club leader route: [college]/dashboard
+        const [college] = pathSegments;
+        const validation = validateClubRoute(college);
+        isAtValidStudentRoute = validation.isValid;
+      }
+      
+      // If all approvals are complete and on restricted pages, redirect to college dashboard
       if (allApprovalsComplete && (isAtOnboarding || isAtPending)) {
-        return NextResponse.redirect(new URL('/dashboard', req.url));
+        // Default to cmrit if no college info available
+        return NextResponse.redirect(new URL('/cmrit/dashboard', req.url));
       }
       
       // If onboarded but not all approvals complete, redirect to pending-approval
       if (isAtOnboarding) {
         return NextResponse.redirect(new URL('/pending-approval', req.url));
+      }
+      
+      // If at invalid route and approvals complete, redirect to default college dashboard
+      if (allApprovalsComplete && !isAtValidStudentRoute && !isAtOnboarding && !isAtPending) {
+        return NextResponse.redirect(new URL('/cmrit/dashboard', req.url));
       }
     }
   }

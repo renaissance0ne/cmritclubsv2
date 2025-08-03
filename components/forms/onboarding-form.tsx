@@ -29,6 +29,7 @@ const formSchema = z.object({
   fullName: z.string().min(2, { message: "Full name must be at least 2 characters." }),
   phoneNumber: z.string().regex(/^\d{10}$/, { message: "Please enter a valid 10-digit phone number." }),
   rollNumber: z.string().min(10, { message: "Please enter a valid roll number." }),
+  college: z.string().min(1, { message: "Please select your college." }),
   department: z.string().min(2, { message: "Department is required." }),
   yearOfStudy: z.string(),
   expectedGraduation: z.date(),
@@ -53,6 +54,7 @@ export function OnboardingForm() {
       fullName: "",
       phoneNumber: "",
       rollNumber: "",
+      college: "",
       department: "",
       yearOfStudy: "1",
       expectedGraduation: new Date(),
@@ -130,6 +132,29 @@ export function OnboardingForm() {
                 <FormLabel>Roll Number</FormLabel>
                 <FormControl>
                   <Input placeholder="21R21A0501" {...field} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <FormField
+            control={form.control}
+            name="college"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>College</FormLabel>
+                <FormControl>
+                  <Select onValueChange={field.onChange} defaultValue={field.value}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select your college" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="cmrit">CMR Institute of Technology</SelectItem>
+                      <SelectItem value="cmrcet">CMR College of Engineering & Technology</SelectItem>
+                      <SelectItem value="cmrtc">CMR Technical Campus</SelectItem>
+                      <SelectItem value="cmrec">CMR Engineering College</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </FormControl>
                 <FormMessage />
               </FormItem>

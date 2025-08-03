@@ -22,18 +22,20 @@ interface ClubApplication {
 }
 
 interface ClubApplicationsContainerProps {
-  pending: ClubApplication[];
-  approved: ClubApplication[];
-  rejected: ClubApplication[];
-  officialRole?: string;
+  pending?: ClubApplication[];
+  approved?: ClubApplication[];
+  rejected?: ClubApplication[];
+  officialRole: string;
+  college: string;
   department?: string;
 }
 
 export function ClubApplicationsContainer({ 
-  pending: initialPending, 
-  approved: initialApproved, 
-  rejected: initialRejected,
+  pending: initialPending = [], 
+  approved: initialApproved = [], 
+  rejected: initialRejected = [],
   officialRole,
+  college,
   department
 }: ClubApplicationsContainerProps) {
   const [applications, setApplications] = useState({

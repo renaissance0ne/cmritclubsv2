@@ -5,15 +5,15 @@ import { auth } from "@clerk/nextjs/server"
 export default async function Home() {
   const { userId } = await auth()
   const isLoggedIn = !!userId
-
+  
   return (
     <HeroSection
-      title="Welcome to Our Platform"
+      title="cmritclubs"
       subtitle={{
-        regular: "Transform your ideas into ",
-        gradient: "beautiful digital experiences",
+        regular: "Streamline your college's",
+        gradient: " event approvals digitally",
       }}
-      description="Transform your ideas into reality with our comprehensive suite of development tools and resources."
+      description="Replace manual event permission workflows with a transparent, automated system. Connect clubs, mentors, and college officials in one unified platform for seamless event management."
       authButtons={<AuthButtons isLoggedIn={isLoggedIn} />}
       bottomImage={{
         light: "https://www.launchuicomponents.com/app-light.png",
@@ -29,4 +29,3 @@ export default async function Home() {
     />
   )
 }
-

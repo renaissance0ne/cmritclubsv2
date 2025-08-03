@@ -126,7 +126,11 @@ export function ClubApplicationsList({
             <div className="flex items-center space-x-2">
               <Calendar className="w-4 h-4 text-gray-500" />
               <span className="text-sm">
-                Graduation: {new Date(application.expected_graduation).toLocaleDateString()}
+                Graduation: {new Date(application.expected_graduation).toLocaleDateString('en-US', { 
+                  year: 'numeric', 
+                  month: 'numeric', 
+                  day: 'numeric' 
+                })}
               </span>
             </div>
           </div>
@@ -147,7 +151,15 @@ export function ClubApplicationsList({
 
           {/* Application Date */}
           <div className="text-xs text-gray-500">
-            Applied: {new Date(application.created_at).toLocaleString()}
+            Applied: {new Date(application.created_at).toLocaleString('en-US', {
+              year: 'numeric',
+              month: 'numeric', 
+              day: 'numeric',
+              hour: 'numeric',
+              minute: 'numeric',
+              second: 'numeric',
+              hour12: true
+            })}
           </div>
 
           {/* Actions for pending applications */}
