@@ -29,6 +29,16 @@ export default clerkMiddleware(async (auth, req) => {
     return NextResponse.next();
   }
 
+  // For API routes, handle authentication but don't redirect
+  if (req.nextUrl.pathname.startsWith('/api/')) {
+    const { userId } = await auth();
+    if (!userId) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+    // For authenticated API requests, let them proceed
+    return NextResponse.next();
+  }
+
   // For all other routes, we must await the auth() call to get user details.
   const { userId, sessionClaims } = await auth();
   if (!userId) {
@@ -126,16 +136,26 @@ export default clerkMiddleware(async (auth, req) => {
         return NextResponse.redirect(new URL('/pending-approval', req.url));
       }
       
-      // Check if student is at a valid college dashboard route
+      // Check if student is at a valid college route
       const pathname = req.nextUrl.pathname;
       const pathSegments = pathname.split('/').filter(Boolean);
       let isAtValidStudentRoute = false;
       
-      if (pathSegments.length === 2 && pathSegments[1] === 'dashboard') {
-        // Club leader route: [college]/dashboard
+      if (pathSegments.length >= 2) {
         const [college] = pathSegments;
         const validation = validateClubRoute(college);
-        isAtValidStudentRoute = validation.isValid;
+        
+        if (validation.isValid) {
+          // Valid routes for club leaders:
+          // [college]/dashboard
+          // [college]/collections
+          // [college]/collections/[collection-name]
+          // [college]/collections/[collection-name]/draft-letter
+          if (pathSegments[1] === 'dashboard' || 
+              pathSegments[1] === 'collections') {
+            isAtValidStudentRoute = true;
+          }
+        }
       }
       
       // If all approvals are complete and on restricted pages, redirect to college dashboard
