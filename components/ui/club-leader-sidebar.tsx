@@ -10,7 +10,8 @@ import {
   Calendar,
   BarChart3,
   Settings,
-  LogOut 
+  LogOut,
+  FolderOpen 
 } from "lucide-react";
 import { SignOutButton } from "@clerk/nextjs";
 
@@ -31,6 +32,12 @@ export function ClubLeaderSidebar({ displayName, college }: ClubLeaderSidebarPro
       href: dashboardPath,
       icon: LayoutDashboard,
       active: pathname === dashboardPath
+    },
+    {
+      title: "Collections",
+      href: `${basePath}/collections`,
+      icon: FolderOpen,
+      active: pathname.startsWith(`${basePath}/collections`)
     },
     {
       title: "Members",
