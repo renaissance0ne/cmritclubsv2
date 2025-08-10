@@ -69,6 +69,20 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Initialize approval status for each recipient with the new structure
+    const initialApprovalStatus: any = {
+      overall_status: 'pending'
+    };
+    
+    recipients.forEach((recipient: string) => {
+      initialApprovalStatus[recipient] = {
+        status: 'pending',
+        comments: null,
+        updated_at: new Date().toISOString(),
+        official_id: null
+      };
+    });
+
     // Create the letter
     const { data: letter, error: createError } = await supabase
       .from('letters')
@@ -78,7 +92,7 @@ export async function POST(request: NextRequest) {
         subject: subject.trim(),
         body: body.trim(),
         club_members_by_dept,
-        status: 'draft'
+        approval_status: initialApprovalStatus
       })
       .select()
       .single();

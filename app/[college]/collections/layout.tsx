@@ -20,7 +20,7 @@ export default async function ClubLeaderLayout({ children, params }: ClubLeaderL
 
   const { college } = await params;
   
-  // Validate the college parameter
+  // Validate the college parameter for club routes
   const validation = validateClubRoute(college);
   if (!validation.isValid) {
     redirect('/404');

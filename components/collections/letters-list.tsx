@@ -22,9 +22,18 @@ interface Letter {
   id: string;
   subject: string;
   recipients: string[];
-  status: string;
   created_at: string;
   club_members_by_dept: Record<string, string[]>;
+  approval_status: {
+    overall_status: 'pending' | 'approved' | 'rejected';
+    [key: string]: {
+      status: 'pending' | 'approved' | 'rejected';
+      comments?: string;
+      updated_at?: string;
+      official_id?: string;
+      approved_members?: string[];
+    } | string;
+  };
 }
 
 interface LettersListProps {
@@ -73,6 +82,49 @@ export function LettersList({ letters, collectionName, college }: LettersListPro
     }
   };
 
+  // Helper function to get overall status from approval_status
+  const getOverallStatus = (approval_status: any): string => {
+    if (approval_status && typeof approval_status === 'object') {
+      // If overall_status exists, use it
+      if (approval_status.overall_status) {
+        return approval_status.overall_status;
+      }
+      
+      // Otherwise, calculate it from individual official statuses
+      const officialStatuses = Object.keys(approval_status)
+        .filter(key => key !== 'overall_status')
+        .map(key => {
+          const status = approval_status[key];
+          return typeof status === 'object' ? status.status : 'pending';
+        });
+      
+      if (officialStatuses.length === 0) return 'pending';
+      
+      // If any official rejected, overall is rejected
+      if (officialStatuses.some(status => status === 'rejected')) {
+        return 'rejected';
+      }
+      
+      // If all officials approved, overall is approved
+      if (officialStatuses.every(status => status === 'approved')) {
+        return 'approved';
+      }
+      
+      // Otherwise, it's pending
+      return 'pending';
+    }
+    return 'pending'; // Default fallback
+  };
+
+  // Helper function to get official approval status for display
+  const getOfficialApprovalStatus = (letter: Letter, officialRole: string): string => {
+    const approvalInfo = letter.approval_status?.[officialRole];
+    if (typeof approvalInfo === 'object') {
+      return approvalInfo.status || 'pending';
+    }
+    return 'pending';
+  };
+
   const getRecipientDisplayNames = (recipients: string[]) => {
     const displayNames: Record<string, string> = {
       hs_hod: 'HS HOD',
@@ -88,8 +140,49 @@ export function LettersList({ letters, collectionName, college }: LettersListPro
     return recipients.map(r => displayNames[r] || r).join(', ');
   };
 
+  const getOfficialDisplayName = (officialKey: string): string => {
+    const displayNames: Record<string, string> = {
+      hs_hod: 'HS HOD',
+      csm_hod: 'CSM HOD',
+      cse_hod: 'CSE HOD',
+      csd_hod: 'CSD HOD',
+      ece_hod: 'ECE HOD',
+      dean: 'Dean',
+      tpo: 'TPO',
+      director: 'Director'
+    };
+    
+    return displayNames[officialKey] || officialKey.toUpperCase();
+  };
+
+  const getApprovalStatusColor = (status: string): string => {
+    switch (status) {
+      case 'approved':
+        return 'bg-green-100 text-green-800 border-green-300';
+      case 'rejected':
+        return 'bg-red-100 text-red-800 border-red-300';
+      case 'pending':
+        return 'bg-yellow-100 text-yellow-800 border-yellow-300';
+      default:
+        return 'bg-gray-100 text-gray-800 border-gray-300';
+    }
+  };
+
   const getTotalMembers = (clubMembersByDept: Record<string, string[]>) => {
     return Object.values(clubMembersByDept).reduce((total, members) => total + members.length, 0);
+  };
+
+  const formatDate = (dateString: string): string => {
+    try {
+      return new Date(dateString).toLocaleDateString('en-GB', {
+        day: '2-digit',
+        month: '2-digit', 
+        year: 'numeric'
+      });
+    } catch (error) {
+      console.error('Error formatting date:', error);
+      return 'Invalid Date';
+    }
   };
 
   if (letters.length === 0) {
@@ -122,8 +215,8 @@ export function LettersList({ letters, collectionName, college }: LettersListPro
                   <h4 className="text-lg font-medium text-gray-900 truncate">
                     {letter.subject}
                   </h4>
-                  <Badge className={getStatusColor(letter.status)}>
-                    {letter.status.charAt(0).toUpperCase() + letter.status.slice(1)}
+                  <Badge className={getStatusColor(getOverallStatus(letter.approval_status))}>
+                    {getOverallStatus(letter.approval_status).charAt(0).toUpperCase() + getOverallStatus(letter.approval_status).slice(1)}
                   </Badge>
                 </div>
                 
@@ -140,7 +233,56 @@ export function LettersList({ letters, collectionName, college }: LettersListPro
                   
                   <div className="flex items-center text-sm text-gray-600">
                     <Calendar className="w-4 h-4 mr-2" />
-                    <span>{new Date(letter.created_at).toLocaleDateString()}</span>
+                    <span>{formatDate(letter.created_at)}</span>
+                  </div>
+                </div>
+
+                {/* Official Approval Statuses */}
+                <div className="mt-4">
+                  <h5 className="text-sm font-medium text-gray-700 mb-3">Official Approval Status:</h5>
+                  <div className="space-y-2">
+                    {letter.recipients.map((officialKey) => {
+                      const officialStatus = getOfficialApprovalStatus(letter, officialKey);
+                      const officialInfo = letter.approval_status?.[officialKey];
+                      const approvedMembers = typeof officialInfo === 'object' ? officialInfo.approved_members : [];
+                      
+                      return (
+                        <div key={officialKey} className="flex flex-col space-y-1 p-2 bg-gray-50 rounded-lg">
+                          <div className="flex items-center justify-between">
+                            <span className="text-sm font-medium text-gray-700">
+                              {getOfficialDisplayName(officialKey)}
+                            </span>
+                            <Badge 
+                              variant="outline" 
+                              className={`text-xs ${getApprovalStatusColor(officialStatus)}`}
+                            >
+                              {officialStatus.charAt(0).toUpperCase() + officialStatus.slice(1)}
+                            </Badge>
+                          </div>
+                          
+                          {/* Show approved members if any */}
+                          {approvedMembers && approvedMembers.length > 0 && (
+                            <div className="text-xs text-green-600">
+                              <span className="font-medium">Approved Members:</span> {approvedMembers.join(', ')}
+                            </div>
+                          )}
+                          
+                          {/* Show timestamp if available */}
+                          {typeof officialInfo === 'object' && officialInfo.updated_at && (
+                            <div className="text-xs text-gray-500">
+                              {formatDate(officialInfo.updated_at)}
+                            </div>
+                          )}
+                          
+                          {/* Show comments if any */}
+                          {typeof officialInfo === 'object' && officialInfo.comments && (
+                            <div className="text-xs text-gray-600 italic">
+                              "{officialInfo.comments}"
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
                   </div>
                 </div>
               </div>

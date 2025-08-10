@@ -9,7 +9,8 @@ import {
   FileText, 
   Users, 
   Settings,
-  LogOut 
+  LogOut,
+  Mail
 } from "lucide-react";
 import { SignOutButton } from "@clerk/nextjs";
 
@@ -24,14 +25,15 @@ export function OfficialSidebar({ officialRole, displayName, department }: Offic
 
   // Generate base paths based on role type
   const isHOD = officialRole.includes('_hod');
-  const dept = department || officialRole.replace('_hod', '');
+  const college = 'cmrit'; // Default college - could be made dynamic later
   
   const basePath = isHOD 
-    ? `/${dept}/hod`
-    : `/${officialRole}`;
+    ? `/${college}/hod/${officialRole}`
+    : `/${college}/official/${officialRole}`;
 
   const dashboardPath = `${basePath}/dashboard`;
   const applicationsPath = `${basePath}/club-applications`;
+  const lettersPath = `${basePath}/letters`;
 
   const navigationItems = [
     {
@@ -45,6 +47,12 @@ export function OfficialSidebar({ officialRole, displayName, department }: Offic
       href: applicationsPath,
       icon: FileText,
       active: pathname.startsWith(applicationsPath)
+    },
+    {
+      title: "Letters",
+      href: lettersPath,
+      icon: Mail,
+      active: pathname.startsWith(lettersPath)
     }
   ];
 

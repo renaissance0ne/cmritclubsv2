@@ -27,7 +27,7 @@ export const COLLEGE_NAMES: Record<College, string> = {
 // Department name mapping
 export const DEPARTMENT_NAMES: Record<Department, string> = {
   cse: 'Computer Science & Engineering',
-  csm: 'Computer Science & Mathematics',
+  csm: 'Computer Science & Machine Learning',
   hs: 'Humanities & Sciences',
   ece: 'Electronics & Communication Engineering',
   csd: 'Computer Science & Data Science'

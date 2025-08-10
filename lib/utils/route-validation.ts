@@ -217,6 +217,34 @@ export function validateConsistentRoute(college: string, type: string, identifie
 }
 
 /**
+ * Validates an official route for letters management
+ */
+export async function validateOfficialRoute(college: string, type: string, identifier: string): Promise<RouteValidation> {
+  // Use the existing validateConsistentRoute function
+  const validation = validateConsistentRoute(college, type, identifier);
+  
+  // Additional validation for official routes
+  if (!validation.isValid) {
+    return validation;
+  }
+
+  // Ensure this is an official route (hod or official type)
+  if (type !== 'hod' && type !== 'official') {
+    return {
+      isValid: false,
+      error: 'Invalid route type for official access'
+    };
+  }
+
+  return {
+    isValid: true,
+    college: validation.college,
+    department: validation.department,
+    role: validation.role
+  };
+}
+
+/**
  * Generates breadcrumb navigation for consistent route structure
  */
 export function generateConsistentBreadcrumbs(

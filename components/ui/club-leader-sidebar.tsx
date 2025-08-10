@@ -43,8 +43,7 @@ export function ClubLeaderSidebar({ displayName, college }: ClubLeaderSidebarPro
       title: "Members",
       href: `${basePath}/members`,
       icon: Users,
-      active: pathname.startsWith(`${basePath}/members`),
-      disabled: true // Future implementation
+      active: pathname.startsWith(`${basePath}/members`)
     },
     {
       title: "Events",

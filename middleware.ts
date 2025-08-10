@@ -113,6 +113,11 @@ export default clerkMiddleware(async (auth, req) => {
         const [college, type, identifier] = pathSegments;
         const validation = validateConsistentRoute(college, type, identifier);
         isAtValidOfficialRoute = validation.isValid;
+      } else if (pathSegments.length === 4 && pathSegments[3] === 'letters') {
+        // Consistent route: [college]/[type]/[identifier]/letters
+        const [college, type, identifier] = pathSegments;
+        const validation = validateConsistentRoute(college, type, identifier);
+        isAtValidOfficialRoute = validation.isValid;
       }
       
       if (!isAtValidOfficialRoute && !isAtOnboarding && !isAtPending) {
@@ -151,8 +156,10 @@ export default clerkMiddleware(async (auth, req) => {
           // [college]/collections
           // [college]/collections/[collection-name]
           // [college]/collections/[collection-name]/draft-letter
+          // [college]/members
           if (pathSegments[1] === 'dashboard' || 
-              pathSegments[1] === 'collections') {
+              pathSegments[1] === 'collections' ||
+              pathSegments[1] === 'members') {
             isAtValidStudentRoute = true;
           }
         }
