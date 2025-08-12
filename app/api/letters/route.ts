@@ -9,13 +9,13 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const { 
-      collection_id, 
-      recipients, 
-      subject, 
-      body, 
+    const {
+      collection_id,
+      recipients,
+      subject,
+      body,
       club_members_by_dept,
-      closing 
+      closing
     } = await request.json();
 
     if (!collection_id || !recipients || !subject || !body || !club_members_by_dept) {
@@ -27,10 +27,10 @@ export async function POST(request: NextRequest) {
 
     const supabase = await createClient();
 
-    // Get the club leader's profile
+    // Get the club leader's profile to verify they're approved
     const { data: profile, error: profileError } = await supabase
       .from('profiles')
-      .select('*')
+      .select('id, approval_status')
       .eq('clerk_id', userId)
       .single();
 
@@ -38,78 +38,55 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Profile not found' }, { status: 404 });
     }
 
-    // Check if the club leader is approved
-    const approvalStatus = profile.approval_status as any;
-    
-    // Check if all required approvals are approved
-    const requiredApprovals = ['tpo', 'dean', 'hsHod', 'csdHod', 'cseHod', 'csmHod', 'eceHod', 'director'];
-    const allApproved = requiredApprovals.every(role => 
-      approvalStatus?.[role]?.status === 'approved'
+    const requiredApprovals = ['tpo', 'dean', 'director'];
+    const profileApprovalStatus = profile.approval_status as any;
+    const isApproved = requiredApprovals.every(
+      (role) => profileApprovalStatus?.[role]?.status === 'approved'
     );
-    
-    if (!allApproved) {
+
+    if (!isApproved) {
       return NextResponse.json(
-        { error: 'Only approved club leaders can create letters' },
+        { error: 'Your profile must be approved by the TPO, Dean, and Director before creating letters.' },
         { status: 403 }
       );
     }
 
-    // Verify the collection belongs to this club leader
-    const { data: collection, error: collectionError } = await supabase
-      .from('collections')
-      .select('*')
-      .eq('id', collection_id)
-      .eq('club_id', profile.id)
-      .single();
+    // Initialize approval_status for all recipients
+    const initialApprovalStatus = recipients.reduce((acc: any, recipient: string) => {
+      acc[recipient] = { status: 'pending', updated_at: new Date().toISOString(), comments: null, approved_members: [] };
+      return acc;
+    }, {});
 
-    if (collectionError || !collection) {
-      return NextResponse.json(
-        { error: 'Collection not found or access denied' },
-        { status: 404 }
-      );
-    }
+    // Combine body and closing for the final letter content
+    const fullBody = `${body.trim()}\n\n${closing || ''}`.trim();
 
-    // Initialize approval status for each recipient with the new structure
-    const initialApprovalStatus: any = {
-      overall_status: 'pending'
-    };
-    
-    recipients.forEach((recipient: string) => {
-      initialApprovalStatus[recipient] = {
-        status: 'pending',
-        comments: null,
-        updated_at: new Date().toISOString(),
-        official_id: null
-      };
-    });
-
-    // Create the letter
-    const { data: letter, error: createError } = await supabase
+    // Upsert the letter
+    const { data: letter, error } = await supabase
       .from('letters')
-      .insert({
+      .upsert({
         collection_id,
         recipients,
         subject: subject.trim(),
-        body: body.trim(),
+        body: fullBody,
         club_members_by_dept,
-        approval_status: initialApprovalStatus
-      })
+        approval_status: initialApprovalStatus,
+      }, { onConflict: 'collection_id' })
       .select()
       .single();
 
-    if (createError) {
-      console.error('Error creating letter:', createError);
+    if (error) {
+      console.error('Error upserting letter:', error);
       return NextResponse.json(
-        { error: 'Failed to create letter' },
+        { error: 'Failed to create or update letter', details: error.message },
         { status: 500 }
       );
     }
 
-    return NextResponse.json(letter, { status: 201 });
-  } catch (error) {
+    return NextResponse.json(letter);
+  } catch (error: any) {
     console.error('Error in POST /api/letters:', error);
     return NextResponse.json(
-      { error: 'Internal server error' },
+      { error: 'An unexpected error occurred', details: error.message },
       { status: 500 }
     );
   }

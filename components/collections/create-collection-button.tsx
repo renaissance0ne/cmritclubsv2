@@ -49,15 +49,28 @@ export function CreateCollectionButton({ college }: CreateCollectionButtonProps)
         }),
       });
 
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.message || 'Failed to create collection');
+      if (response.ok) {
+        const newCollection = await response.json();
+        toast.success(`Collection "${collectionName}" created successfully`);
+        setCollectionName('');
+        setIsOpen(false);
+        
+        // Use Next.js router to refresh the page properly
+        router.refresh();
+        
+        // Small delay to ensure the refresh completes before any navigation
+        setTimeout(() => {
+          // Optional: Navigate to the new collection if needed
+          // router.push(`/${college}/collections/${encodeURIComponent(newCollection.name)}`);
+        }, 100);
+      } else if (response.status === 409) {
+        const { error } = await response.json();
+        toast.error(error); // Or use a more sophisticated toast notification
+      } else {
+        const { error } = await response.json();
+        console.error('Failed to create collection:', error);
+        toast.error('An error occurred while creating the collection.');
       }
-
-      const newCollection = await response.json();
-      toast.success(`Collection "${collectionName}" created successfully`);
-      setCollectionName('');
-      setIsOpen(false);
       
       // Use Next.js router to refresh the page properly
       router.refresh();

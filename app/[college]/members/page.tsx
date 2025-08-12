@@ -71,13 +71,14 @@ export default async function MembersPage({ params }: MembersPageProps) {
   }
 
   // Get custom roles for this club
-  const { data: customRoles, error: rolesError } = await supabase
-    .from('club_custom_roles')
-    .select('*')
+  const { data: rolesData, error: rolesError } = await supabase
+    .from('club_members')
+    .select('role')
     .eq('club_name', clubName)
     .eq('college', validCollege)
-    .eq('is_active', true)
-    .order('role_name');
+    .eq('is_active', true);
+
+  const customRoles = rolesData ? [...new Set(rolesData.map(r => r.role).filter(role => role && role !== 'incharge' && role !== 'club_lead'))] : [];
 
   if (rolesError) {
     console.error('Error fetching custom roles:', rolesError);

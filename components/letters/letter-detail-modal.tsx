@@ -370,7 +370,7 @@ export function LetterDetailModal({
               </CardHeader>
               <CardContent className="space-y-4">
                 <div>
-                  <Label htmlFor="comment">Comment (Optional)</Label>
+                  <Label htmlFor="comment">Comment (Required for rejection)</Label>
                   <Textarea
                     id="comment"
                     placeholder="Add a comment about your decision..."
@@ -381,19 +381,18 @@ export function LetterDetailModal({
                 </div>
 
                 <div className="flex flex-col sm:flex-row gap-3">
-                  {/* Overall Letter Actions */}
                   {isHOD ? (
                     <>
                       <Button
                         onClick={() => handleApproval('approve')}
-                        disabled={isSubmitting || (selectedMembers.length === 0)}
+                        disabled={isSubmitting}
                         className="bg-green-600 hover:bg-green-700 text-white"
                       >
                         {isSubmitting ? 'Processing...' : `Approve Selected Students (${selectedMembers.length})`}
                       </Button>
                       <Button
                         onClick={() => handleApproval('reject')}
-                        disabled={isSubmitting}
+                        disabled={isSubmitting || !comment.trim()}
                         variant="destructive"
                       >
                         {isSubmitting ? 'Processing...' : 'Reject Letter'}
@@ -410,7 +409,7 @@ export function LetterDetailModal({
                       </Button>
                       <Button
                         onClick={() => handleApproval('reject')}
-                        disabled={isSubmitting}
+                        disabled={isSubmitting || !comment.trim()}
                         variant="destructive"
                       >
                         {isSubmitting ? 'Processing...' : 'Reject Letter'}
