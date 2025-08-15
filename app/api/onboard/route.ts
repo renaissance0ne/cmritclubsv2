@@ -24,13 +24,32 @@ export async function POST(req: Request) {
       return new NextResponse('Invalid email domain.', { status: 400 });
     }
 
-    // 3. Save user data to Supabase
+    // 3. Save user data to Supabase - map form fields to database columns
     const { data: profileData, error: supabaseError } = await supabase
       .from('profiles')
       .insert([{
         clerk_id: userId,
-        ...userData,
-        approval_status: 'pending',
+        full_name: userData.fullName,
+        phone_number: userData.phoneNumber,
+        roll_number: userData.rollNumber,
+        college: userData.college,
+        department: userData.department,
+        year_of_study: userData.yearOfStudy,
+        expected_graduation: userData.expectedGraduation,
+        club_name: userData.clubName, // Map clubName to club_name
+        faculty_in_charge: userData.facultyInCharge,
+        proof_letter_url: userData.proofLetterUrl,
+        approval_status: {
+          overall_status: 'pending',
+          tpo: 'pending',
+          dean: 'pending',
+          hs_hod: 'pending',
+          cse_hod: 'pending',
+          csd_hod: 'pending',
+          csm_hod: 'pending',
+          ece_hod: 'pending',
+          director: 'pending'
+        },
       }])
       .select()
       .single();

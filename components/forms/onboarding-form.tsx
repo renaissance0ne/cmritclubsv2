@@ -273,14 +273,14 @@ export function OnboardingForm() {
               <FormControl>
                 <div className="flex flex-col items-center justify-center w-full">
                   {!uploadedFileName ? (
-                    <UploadButton<OurFileRouter, "pdfUploader">
+                    <UploadDropzone<OurFileRouter, "pdfUploader">
                       endpoint="pdfUploader"
                       onClientUploadComplete={(res) => {
                         console.log("Upload complete:", res);
                         if (res && res[0]) {
-                          form.setValue("proofLetterUrl", res[0].ufsUrl);
+                          form.setValue("proofLetterUrl", res[0].url);
                           setUploadedFileName(res[0].name);
-                          console.log("File URL set:", res[0].ufsUrl);
+                          console.log("File URL set:", res[0].url);
                         }
                         setUploadProgress(0);
                       }}
@@ -296,6 +296,16 @@ export function OnboardingForm() {
                       onUploadProgress={(progress) => {
                         console.log("Upload progress:", progress);
                         setUploadProgress(progress);
+                      }}
+                      appearance={{
+                        container: "w-full max-w-lg mx-auto",
+                        uploadIcon: "text-blue-500",
+                        label: "text-blue-600 hover:text-blue-500",
+                        allowedContent: "text-gray-600",
+                        button: "bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md transition-colors"
+                      }}
+                      config={{
+                        mode: "auto"
                       }}
                     />
                   ) : (

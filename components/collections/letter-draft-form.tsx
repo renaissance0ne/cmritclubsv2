@@ -63,6 +63,15 @@ const RECIPIENT_OPTIONS = [
 
 const DEPARTMENTS = ['HS', 'CSE', 'CSM', 'CSD', 'ECE'];
 
+// HOD to Department mapping
+const HOD_TO_DEPARTMENT_MAP: Record<string, string> = {
+  'hs_hod': 'HS',
+  'cse_hod': 'CSE',
+  'csm_hod': 'CSM',
+  'csd_hod': 'CSD',
+  'ece_hod': 'ECE',
+};
+
 export function LetterDraftForm({ collection, profile, college }: LetterDraftFormProps) {
   const router = useRouter();
   const [currentStep, setCurrentStep] = useState(1);
@@ -121,11 +130,66 @@ export function LetterDraftForm({ collection, profile, college }: LetterDraftFor
     }));
   };
 
+  // Helper function to get HOD recipients from selected recipients
+  const getSelectedHODs = (): string[] => {
+    return letterContent.recipients.filter(recipient => recipient.endsWith('_hod'));
+  };
+
+  // Helper function to get departments based on selected HOD recipients
+  const getRelevantDepartments = (): string[] => {
+    const selectedHODs = getSelectedHODs();
+    const departments = selectedHODs
+      .map(hod => HOD_TO_DEPARTMENT_MAP[hod])
+      .filter(dept => dept !== undefined);
+    
+    return [...new Set(departments)]; // Remove duplicates
+  };
+
+  // Helper function to initialize club members for relevant departments only
+  const initializeClubMembersForDepartments = (departments: string[]): ClubMembersByDept => {
+    const initialState: ClubMembersByDept = {
+      HS: [],
+      CSE: [],
+      CSM: [],
+      CSD: [],
+      ECE: [],
+    };
+
+    departments.forEach(dept => {
+      if (dept in initialState) {
+        initialState[dept as keyof ClubMembersByDept] = [''];
+      }
+    });
+
+    return initialState;
+  };
+
+  // Helper function to get department names for user feedback
+  const getDepartmentDisplayText = (): string => {
+    const relevantDepartments = getRelevantDepartments();
+    if (relevantDepartments.length === 0) {
+      return 'No department-specific member details required';
+    }
+    return `Required departments: ${relevantDepartments.join(', ')}`;
+  };
+
   const validateStep1 = () => {
     if (letterContent.recipients.length === 0) {
       toast.error('Please select at least one recipient');
       return false;
     }
+    
+    // Validate that selected recipients exist in the options
+    const validRecipients = RECIPIENT_OPTIONS.map(option => option.value);
+    const invalidRecipients = letterContent.recipients.filter(recipient => 
+      !validRecipients.includes(recipient)
+    );
+    
+    if (invalidRecipients.length > 0) {
+      toast.error(`Invalid recipients selected: ${invalidRecipients.join(', ')}`);
+      return false;
+    }
+    
     if (!letterContent.subject.trim()) {
       toast.error('Please enter a subject');
       return false;
@@ -138,11 +202,21 @@ export function LetterDraftForm({ collection, profile, college }: LetterDraftFor
   };
 
   const validateStep2 = () => {
-    const hasMembers = Object.values(clubMembers).some((dept: string[]) => 
-      dept.some((roll: string) => roll.trim() !== '')
-    );
+    const relevantDepartments = getRelevantDepartments();
+    
+    // If no HOD recipients selected, validation passes (no department fields needed)
+    if (relevantDepartments.length === 0) {
+      return true;
+    }
+    
+    // Check if at least one member is added in the relevant departments
+    const hasMembers = relevantDepartments.some((dept) => {
+      const deptMembers = clubMembers[dept as keyof ClubMembersByDept];
+      return deptMembers && deptMembers.some((roll: string) => roll.trim() !== '');
+    });
+    
     if (!hasMembers) {
-      toast.error('Please add at least one club member');
+      toast.error('Please add at least one club member for the selected departments');
       return false;
     }
     return true;
@@ -150,6 +224,10 @@ export function LetterDraftForm({ collection, profile, college }: LetterDraftFor
 
   const handleNext = () => {
     if (validateStep1()) {
+      // Reinitialize club members based on selected HOD recipients
+      const relevantDepartments = getRelevantDepartments();
+      const newClubMembers = initializeClubMembersForDepartments(relevantDepartments);
+      setClubMembers(newClubMembers);
       setCurrentStep(2);
     }
   };
@@ -164,12 +242,18 @@ export function LetterDraftForm({ collection, profile, college }: LetterDraftFor
     setIsSubmitting(true);
 
     try {
-      // Clean up club members data - remove empty entries
+      // Get relevant departments based on selected HOD recipients
+      const relevantDepartments = getRelevantDepartments();
+      
+      // Clean up club members data - only include relevant departments and remove empty entries
       const cleanedClubMembers: Record<string, string[]> = {};
-      Object.entries(clubMembers).forEach(([dept, rolls]: [string, string[]]) => {
-        const cleanedRolls = rolls.filter((roll: string) => roll.trim() !== '');
-        if (cleanedRolls.length > 0) {
-          cleanedClubMembers[dept] = cleanedRolls;
+      relevantDepartments.forEach((dept) => {
+        const deptRolls = clubMembers[dept as keyof ClubMembersByDept];
+        if (deptRolls) {
+          const cleanedRolls = deptRolls.filter((roll: string) => roll.trim() !== '');
+          if (cleanedRolls.length > 0) {
+            cleanedClubMembers[dept] = cleanedRolls;
+          }
         }
       });
 
@@ -323,50 +407,70 @@ export function LetterDraftForm({ collection, profile, college }: LetterDraftFor
       {currentStep === 2 && (
         <div className="space-y-6">
           <h2 className="text-xl font-semibold text-gray-900 mb-6">Club Member Details</h2>
-          <p className="text-gray-600 mb-6">
-            Add roll numbers of club members organized by department
-          </p>
+          <div className="mb-6">
+            <p className="text-gray-600 mb-2">
+              Add roll numbers of club members organized by department
+            </p>
+            <p className="text-sm text-blue-600 font-medium">
+              {getDepartmentDisplayText()}
+            </p>
+          </div>
 
-          {DEPARTMENTS.map((dept) => (
-            <div key={dept} className="border rounded-lg p-4">
-              <div className="flex items-center justify-between mb-3">
-                <Label className="text-base font-medium">{dept} Department</Label>
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  onClick={() => addRollNumberField(dept as keyof ClubMembersByDept)}
-                >
-                  <Plus className="w-4 h-4 mr-1" />
-                  Add
-                </Button>
+          {(() => {
+            const relevantDepartments = getRelevantDepartments();
+            
+            if (relevantDepartments.length === 0) {
+              return (
+                <div className="text-center py-8 bg-gray-50 rounded-lg">
+                  <p className="text-gray-600 mb-2">No department fields needed</p>
+                  <p className="text-sm text-gray-500">
+                    You haven't selected any HOD recipients that require department-specific member details.
+                  </p>
+                </div>
+              );
+            }
+
+            return relevantDepartments.map((dept) => (
+              <div key={dept} className="border rounded-lg p-4">
+                <div className="flex items-center justify-between mb-3">
+                  <Label className="text-base font-medium">{dept} Department</Label>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => addRollNumberField(dept as keyof ClubMembersByDept)}
+                  >
+                    <Plus className="w-4 h-4 mr-1" />
+                    Add
+                  </Button>
+                </div>
+                
+                <div className="space-y-2">
+                  {clubMembers[dept as keyof ClubMembersByDept].map((rollNumber, index) => (
+                    <div key={index} className="flex items-center space-x-2">
+                      <Input
+                        value={rollNumber}
+                        onChange={(e) => updateRollNumber(dept as keyof ClubMembersByDept, index, e.target.value)}
+                        placeholder={`Enter ${dept} roll number`}
+                        className="flex-1"
+                      />
+                      {clubMembers[dept as keyof ClubMembersByDept].length > 1 && (
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => removeRollNumberField(dept as keyof ClubMembersByDept, index)}
+                          className="text-red-600 hover:text-red-700"
+                        >
+                          <Minus className="w-4 h-4" />
+                        </Button>
+                      )}
+                    </div>
+                  ))}
+                </div>
               </div>
-              
-              <div className="space-y-2">
-                {clubMembers[dept as keyof ClubMembersByDept].map((rollNumber, index) => (
-                  <div key={index} className="flex items-center space-x-2">
-                    <Input
-                      value={rollNumber}
-                      onChange={(e) => updateRollNumber(dept as keyof ClubMembersByDept, index, e.target.value)}
-                      placeholder={`Enter ${dept} roll number`}
-                      className="flex-1"
-                    />
-                    {clubMembers[dept as keyof ClubMembersByDept].length > 1 && (
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => removeRollNumberField(dept as keyof ClubMembersByDept, index)}
-                        className="text-red-600 hover:text-red-700"
-                      >
-                        <Minus className="w-4 h-4" />
-                      </Button>
-                    )}
-                  </div>
-                ))}
-              </div>
-            </div>
-          ))}
+            ));
+          })()}
 
           <div className="flex justify-between">
             <Button variant="outline" onClick={handleBack}>

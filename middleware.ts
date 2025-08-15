@@ -118,6 +118,16 @@ export default clerkMiddleware(async (auth, req) => {
         const [college, type, identifier] = pathSegments;
         const validation = validateConsistentRoute(college, type, identifier);
         isAtValidOfficialRoute = validation.isValid;
+      } else if (pathSegments.length >= 4 && pathSegments[3] === 'clubs') {
+        // Consistent route: [college]/[type]/[identifier]/clubs or [college]/[type]/[identifier]/clubs/[club_id]
+        const [college, type, identifier] = pathSegments;
+        const validation = validateConsistentRoute(college, type, identifier);
+        isAtValidOfficialRoute = validation.isValid;
+      } else if (pathSegments.length >= 5 && pathSegments[3] === 'collections') {
+        // Consistent route: [college]/[type]/[identifier]/collections/...
+        const [college, type, identifier] = pathSegments;
+        const validation = validateConsistentRoute(college, type, identifier);
+        isAtValidOfficialRoute = validation.isValid;
       }
       
       if (!isAtValidOfficialRoute && !isAtOnboarding && !isAtPending) {

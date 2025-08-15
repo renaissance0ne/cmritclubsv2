@@ -94,21 +94,52 @@ export function StudentMembersSection({
 
     setIsLoading(true);
     try {
+      const requestBody = {
+        member_id: member.id,
+        college: college
+      };
+      
+      console.log('DELETE request details:', {
+        url: '/api/members/students',
+        method: 'DELETE',
+        body: requestBody,
+        member: member
+      });
+
       const response = await fetch('/api/members/students', {
         method: 'DELETE',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          member_id: member.id,
-          club_name: clubName,
-          college: college
-        }),
+        body: JSON.stringify(requestBody),
+      });
+
+      console.log('DELETE response:', {
+        status: response.status,
+        statusText: response.statusText,
+        ok: response.ok
       });
 
       if (!response.ok) {
-        throw new Error('Failed to remove member');
+        const errorData = await response.json().catch(() => ({}));
+        console.error('Delete member API error:', response.status, errorData);
+        
+        // Handle specific error cases
+        if (response.status === 403 && errorData.error?.includes('club lead')) {
+          toast.error('Cannot delete club lead. Please transfer leadership first.');
+          return;
+        }
+        
+        if (response.status === 403 && errorData.error?.includes('in-charge')) {
+          toast.error('Cannot delete club in-charge. Please assign a new in-charge first.');
+          return;
+        }
+        
+        throw new Error(errorData.error || `Failed to remove member (${response.status})`);
       }
+
+      const responseData = await response.json();
+      console.log('DELETE success response:', responseData);
 
       const updatedMembers = members.filter(m => m.id !== member.id);
       onMembersUpdate(updatedMembers);
@@ -185,6 +216,7 @@ export function StudentMembersSection({
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="pl-10"
+              suppressHydrationWarning
             />
           </div>
 
@@ -236,7 +268,7 @@ export function StudentMembersSection({
                       </TableCell>
                       <TableCell>{DEPARTMENT_NAMES[member.department]}</TableCell>
                       <TableCell>{member.section || '-'}</TableCell>
-                      <TableCell className="text-sm text-gray-600">
+                      <TableCell className="text-sm text-gray-600" suppressHydrationWarning>
                         {formatDate(member.joined_at)}
                       </TableCell>
                       <TableCell>
@@ -253,8 +285,15 @@ export function StudentMembersSection({
                             variant="ghost"
                             size="sm"
                             onClick={() => handleDeleteMember(member)}
-                            disabled={isLoading}
-                            className="h-8 w-8 p-0 text-red-600 hover:text-red-700 hover:bg-red-50"
+                            disabled={isLoading || member.role === 'lead' || member.role === 'club_lead' || member.role === 'incharge'}
+                            className="h-8 w-8 p-0 text-red-600 hover:text-red-700 hover:bg-red-50 disabled:text-gray-400 disabled:hover:bg-transparent"
+                            title={
+                              member.role === 'lead' || member.role === 'club_lead' 
+                                ? 'Cannot delete club lead' 
+                                : member.role === 'incharge' 
+                                ? 'Cannot delete club in-charge' 
+                                : 'Remove member'
+                            }
                           >
                             <Trash2 className="w-3 h-3" />
                           </Button>

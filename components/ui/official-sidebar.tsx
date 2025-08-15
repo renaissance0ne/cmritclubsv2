@@ -10,7 +10,8 @@ import {
   Users, 
   Settings,
   LogOut,
-  Mail
+  Mail,
+  Building2
 } from "lucide-react";
 import { SignOutButton } from "@clerk/nextjs";
 
@@ -34,6 +35,7 @@ export function OfficialSidebar({ officialRole, displayName, department }: Offic
   const dashboardPath = `${basePath}/dashboard`;
   const applicationsPath = `${basePath}/club-applications`;
   const lettersPath = `${basePath}/letters`;
+  const clubsPath = `${basePath}/clubs`;
 
   const navigationItems = [
     {
@@ -47,6 +49,12 @@ export function OfficialSidebar({ officialRole, displayName, department }: Offic
       href: applicationsPath,
       icon: FileText,
       active: pathname.startsWith(applicationsPath)
+    },
+    {
+      title: "Clubs",
+      href: clubsPath,
+      icon: Building2,
+      active: pathname.startsWith(clubsPath)
     },
     {
       title: "Letters",
@@ -107,7 +115,7 @@ export function OfficialSidebar({ officialRole, displayName, department }: Offic
       {/* Footer */}
       <div className="p-4 border-t">
         <SignOutButton>
-          <Button variant="ghost" className="w-full justify-start">
+          <Button variant="ghost" className="w-full justify-start" suppressHydrationWarning>
             <LogOut className="w-4 h-4 mr-2" />
             Sign Out
           </Button>

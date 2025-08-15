@@ -23,7 +23,7 @@ interface Collection {
   name: string;
   created_at: string;
   updated_at: string;
-  letters?: { count: number }[];
+  letter_count?: number;
 }
 
 interface CollectionsGridProps {
@@ -129,7 +129,7 @@ export function CollectionsGrid({ collections, college }: CollectionsGridProps) 
           <div className="flex items-center justify-between">
             <div className="flex items-center text-sm text-gray-600">
               <FileText className="w-4 h-4 mr-1" />
-              <span>{collection.letters?.[0]?.count || 0} letters</span>
+              <span>{collection.letter_count || 0} letters</span>
             </div>
             
             <Link href={`/${college}/collections/${encodeURIComponent(collection.name)}`}>

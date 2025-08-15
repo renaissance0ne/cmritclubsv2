@@ -29,7 +29,8 @@ function ApprovalStatusIcon({ status }: { status: 'pending' | 'approved' | 'reje
   }
 }
 
-function ApprovalStatusBadge({ status }: { status: 'pending' | 'approved' | 'rejected' }) {
+function ApprovalStatusBadge({ status }: { status: 'pending' | 'approved' | 'rejected' | undefined }) {
+  const safeStatus = status || 'pending';
   const variants = {
     pending: 'bg-yellow-100 text-yellow-800 border-yellow-300',
     approved: 'bg-green-100 text-green-800 border-green-300',
@@ -37,8 +38,8 @@ function ApprovalStatusBadge({ status }: { status: 'pending' | 'approved' | 'rej
   };
   
   return (
-    <Badge className={`${variants[status]} border`}>
-      {status.charAt(0).toUpperCase() + status.slice(1)}
+    <Badge className={`${variants[safeStatus]} border`}>
+      {safeStatus.charAt(0).toUpperCase() + safeStatus.slice(1)}
     </Badge>
   );
 }

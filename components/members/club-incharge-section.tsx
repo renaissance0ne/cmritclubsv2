@@ -101,7 +101,7 @@ export function ClubInChargeSection({
                   )}
                 </div>
               </div>
-              <div className="text-xs text-gray-500">
+              <div className="text-xs text-gray-500" suppressHydrationWarning>
                 Assigned on {formatDate(currentInCharge.joined_at)}
               </div>
             </div>
