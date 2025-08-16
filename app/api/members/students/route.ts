@@ -283,16 +283,57 @@ export async function DELETE(request: NextRequest) {
 
     const club_name = userProfile.club_name;
 
-    // Soft delete the member (set is_active to false)
-    const { error: deleteError } = await supabase
+    console.log('DELETE member request:', {
+      member_id,
+      club_name,
+      college,
+      user_profile: userProfile.full_name
+    });
+
+    // First, check if the member exists with the given conditions
+    const { data: existingMember, error: checkError } = await supabase
       .from('club_members')
-      .update({ 
-        is_active: false,
-        updated_at: new Date().toISOString()
-      })
+      .select('*')
       .eq('id', member_id)
       .eq('club_name', club_name)
-      .eq('college', college);
+      .eq('college', college)
+      .single();
+
+    console.log('Member lookup result:', { existingMember, checkError });
+
+    if (checkError || !existingMember) {
+      console.error('Member not found for deletion:', { member_id, club_name, college });
+      return NextResponse.json(
+        { error: 'Member not found or you do not have permission to delete this member' },
+        { status: 404 }
+      );
+    }
+
+    // Prevent deletion of critical roles
+    if (existingMember.role === 'lead' || existingMember.role === 'club_lead') {
+      return NextResponse.json(
+        { error: 'Cannot delete club lead. Please transfer leadership first.' },
+        { status: 403 }
+      );
+    }
+
+    if (existingMember.role === 'incharge') {
+      return NextResponse.json(
+        { error: 'Cannot delete club in-charge. Please assign a new in-charge first.' },
+        { status: 403 }
+      );
+    }
+
+    // Hard delete the member (completely remove from database)
+    const { data: deleteResult, error: deleteError } = await supabase
+      .from('club_members')
+      .delete()
+      .eq('id', member_id)
+      .eq('club_name', club_name)
+      .eq('college', college)
+      .select();
+
+    console.log('Delete result:', { deleteResult, deleteError });
 
     if (deleteError) {
       console.error('Error deleting member:', deleteError);
@@ -302,7 +343,15 @@ export async function DELETE(request: NextRequest) {
       );
     }
 
-    return NextResponse.json({ success: true });
+    return NextResponse.json({ 
+      success: true, 
+      message: 'Member removed successfully',
+      deletedMember: {
+        id: existingMember.id,
+        name: existingMember.name,
+        roll_number: existingMember.roll_number
+      }
+    });
 
   } catch (error) {
     console.error('Error in DELETE /api/members/students:', error);

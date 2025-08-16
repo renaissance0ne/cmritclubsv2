@@ -53,28 +53,44 @@ export default async function CollectionsPage({ params }: CollectionsPageProps) 
     redirect(`/${validCollege}/dashboard`);
   }
 
-  // Fetch collections for this club leader with letter counts
-  const { data: collections, error: collectionsError } = await supabase
+  // Fetch collections for this club leader
+  const { data: collectionsData, error: collectionsError } = await supabase
     .from('collections')
-    .select(`
-      *,
-      letters(count)
-    `)
+    .select('*')
     .eq('club_id', profile.id)
     .eq('college', validCollege)
     .order('created_at', { ascending: false });
+
+  // Get letter counts for each collection
+  let collections = collectionsData;
+  if (collectionsData && collectionsData.length > 0) {
+    const collectionsWithCounts = await Promise.all(
+      collectionsData.map(async (collection) => {
+        const { count } = await supabase
+          .from('letters')
+          .select('*', { count: 'exact', head: true })
+          .eq('collection_id', collection.id);
+        
+        return {
+          ...collection,
+          letter_count: count || 0
+        };
+      })
+    );
+    collections = collectionsWithCounts;
+  }
 
   if (collectionsError) {
     console.error('Error fetching collections:', collectionsError);
   }
 
-  // Debug logging - remove after fixing
-  console.log('DEBUG Collections Page:');
-  console.log('- Profile ID:', profile.id);
-  console.log('- College:', validCollege);
-  console.log('- Collections count:', collections?.length || 0);
-  console.log('- Collections data:', JSON.stringify(collections, null, 2));
-  console.log('- Collections error:', collectionsError);
+  // Debug logging for letter counts
+  if (collections && collections.length > 0) {
+    console.log('Collections with letter counts:');
+    collections.forEach(collection => {
+      console.log(`- ${collection.name}: ${collection.letter_count || 0} letters`);
+    });
+  }
 
   return (
     <div className="min-h-screen bg-gray-50">

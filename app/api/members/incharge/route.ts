@@ -9,7 +9,15 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const { club_name, college, incharge_name, incharge_phone } = await request.json();
+    const { 
+      club_name, 
+      college, 
+      incharge_name, 
+      incharge_phone, 
+      department, 
+      email,
+      current_incharge_id 
+    } = await request.json();
 
     if (!club_name || !college || !incharge_name) {
       return NextResponse.json(
@@ -51,15 +59,38 @@ export async function POST(request: NextRequest) {
 
     // Authorization is now handled via user profile verification above
 
-    // Check if there's already an in-charge for this club
-    const { data: existingInCharge, error: existingError } = await supabase
-      .from('club_members')
-      .select('*')
-      .eq('club_name', club_name)
-      .eq('college', college)
-      .eq('role', 'incharge')
-      .eq('is_active', true)
-      .single();
+    let existingInCharge = null;
+    
+    // If current_incharge_id is provided, try to find that specific record
+    if (current_incharge_id) {
+      const { data: specificInCharge, error: specificError } = await supabase
+        .from('club_members')
+        .select('*')
+        .eq('id', current_incharge_id)
+        .eq('club_name', club_name)
+        .eq('college', college)
+        .eq('role', 'incharge')
+        .eq('is_active', true)
+        .single();
+        
+      if (!specificError && specificInCharge) {
+        existingInCharge = specificInCharge;
+      }
+    } else {
+      // Check if there's already an in-charge for this club
+      const { data: clubInCharge, error: clubError } = await supabase
+        .from('club_members')
+        .select('*')
+        .eq('club_name', club_name)
+        .eq('college', college)
+        .eq('role', 'incharge')
+        .eq('is_active', true)
+        .single();
+        
+      if (!clubError && clubInCharge) {
+        existingInCharge = clubInCharge;
+      }
+    }
 
     if (existingInCharge) {
       // Update existing in-charge
@@ -67,6 +98,9 @@ export async function POST(request: NextRequest) {
         .from('club_members')
         .update({
           name: incharge_name.trim(),
+          department: department || existingInCharge.department,
+          email: email?.trim() || existingInCharge.email,
+          phone: incharge_phone?.trim() || existingInCharge.phone,
           incharge_name: incharge_name.trim(),
           incharge_phone: incharge_phone?.trim() || null,
           updated_at: new Date().toISOString()
@@ -92,6 +126,9 @@ export async function POST(request: NextRequest) {
           club_name,
           college,
           name: incharge_name.trim(),
+          department: department || 'cse',
+          email: email?.trim() || null,
+          phone: incharge_phone?.trim() || null,
           role: 'incharge',
           incharge_name: incharge_name.trim(),
           incharge_phone: incharge_phone?.trim() || null,
