@@ -107,3 +107,34 @@ export interface Mentor {
   created_at: string;
   updated_at: string;
 }
+
+// Letter-related types
+export interface Letter {
+  id: string;
+  subject: string;
+  body: string;
+  recipients: string[];
+  status: any;
+  created_at: string;
+  club_members_by_dept: Record<string, string[]>;
+  approval_status?: {
+    overall_status?: 'pending' | 'approved' | 'rejected';
+    [key: string]: {
+      status: 'pending' | 'approved' | 'rejected';
+      comments?: string;
+      comment?: string;
+      updated_at?: string;
+      date?: string;
+      official_id?: string;
+      approved_members?: string[];
+    } | string | undefined;
+  };
+  collections: {
+    name: string;
+    club_id: string;
+    profiles: {
+      full_name: string;
+      department: string;
+    };
+  };
+}

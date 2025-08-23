@@ -22,44 +22,7 @@ import {
 import { Separator } from '@/components/ui/separator';
 import { FileText, Calendar, Users, Mail, CheckCircle, XCircle, User } from 'lucide-react';
 import { toast } from 'sonner';
-
-interface Letter {
-  id: string;
-  subject: string;
-  body: string;
-  recipients: string[];
-  created_at: string;
-  club_members_by_dept: Record<string, string[]>;
-  approval_status: {
-    overall_status: 'pending' | 'approved' | 'rejected';
-    [key: string]: {
-      status: 'pending' | 'approved' | 'rejected';
-      comments?: string;
-      updated_at?: string;
-      official_id?: string;
-      approved_members?: string[];
-    } | string;
-  };
-  collections: {
-    name: string;
-    club_id: string;
-    profiles: {
-      full_name: string;
-      department: string;
-    };
-  };
-}
-
-interface Official {
-  id: string;
-  clerk_id: string;
-  display_name: string;
-  email: string;
-  official_role: string;
-  role: string;
-  status: string;
-  college: string;
-}
+import { Letter, Official } from '@/lib/types';
 
 interface LetterDetailModalProps {
   letter: Letter;

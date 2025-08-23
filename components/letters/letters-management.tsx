@@ -7,40 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { FileText, Calendar, Users, Mail, CheckCircle, XCircle, Clock } from 'lucide-react';
 import { LetterDetailModal } from './letter-detail-modal';
-
-interface Letter {
-  id: string;
-  subject: string;
-  body: string;
-  recipients: string[];
-  status: any;
-  created_at: string;
-  club_members_by_dept: Record<string, string[]>;
-  approval_status?: Record<string, {
-    status: 'pending' | 'approved' | 'rejected';
-    comment?: string;
-    date?: string;
-  }>;
-  collections: {
-    name: string;
-    club_id: string;
-    profiles: {
-      full_name: string;
-      department: string;
-    };
-  };
-}
-
-interface Official {
-  id: string;
-  clerk_id: string;
-  display_name: string;
-  email: string;
-  official_role: string;
-  role: string;
-  status: string;
-  college: string;
-}
+import { Letter, Official } from '@/lib/types';
 
 interface LettersManagementProps {
   letters: Letter[];
@@ -54,7 +21,10 @@ export function LettersManagement({ letters, currentOfficial }: LettersManagemen
   // Helper functions
   const getOfficialStatus = (letter: Letter): 'pending' | 'approved' | 'rejected' => {
     const status = letter.approval_status?.[currentOfficial.official_role];
-    return status?.status || 'pending';
+    if (typeof status === 'object' && status !== null && 'status' in status) {
+      return status.status;
+    }
+    return 'pending';
   };
 
   const isHOD = currentOfficial.official_role.includes('_hod');
