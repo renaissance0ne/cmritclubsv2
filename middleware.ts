@@ -128,6 +128,16 @@ export default clerkMiddleware(async (auth, req) => {
         const [college, type, identifier] = pathSegments;
         const validation = validateConsistentRoute(college, type, identifier);
         isAtValidOfficialRoute = validation.isValid;
+      } else if (pathSegments.length === 4 && pathSegments[3] === 'officials') {
+        // Admin route: [college]/official/admin/officials
+        const [college, type, identifier] = pathSegments;
+        const validation = validateConsistentRoute(college, type, identifier);
+        isAtValidOfficialRoute = validation.isValid && identifier === 'admin';
+      } else if (pathSegments.length === 4 && pathSegments[3] === 'mentors') {
+        // Admin route: [college]/official/admin/mentors
+        const [college, type, identifier] = pathSegments;
+        const validation = validateConsistentRoute(college, type, identifier);
+        isAtValidOfficialRoute = validation.isValid && identifier === 'admin';
       }
       
       if (!isAtValidOfficialRoute && !isAtOnboarding && !isAtPending) {

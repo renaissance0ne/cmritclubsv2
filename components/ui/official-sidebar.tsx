@@ -11,7 +11,9 @@ import {
   Settings,
   LogOut,
   Mail,
-  Building2
+  Building2,
+  UserCheck,
+  GraduationCap
 } from "lucide-react";
 import { SignOutButton } from "@clerk/nextjs";
 
@@ -36,8 +38,11 @@ export function OfficialSidebar({ officialRole, displayName, department }: Offic
   const applicationsPath = `${basePath}/club-applications`;
   const lettersPath = `${basePath}/letters`;
   const clubsPath = `${basePath}/clubs`;
+  const officialsPath = `${basePath}/officials`;
+  const mentorsPath = `${basePath}/mentors`;
 
-  const navigationItems = [
+  // Base navigation items for all officials
+  const baseNavigationItems = [
     {
       title: "Dashboard",
       href: dashboardPath,
@@ -63,6 +68,27 @@ export function OfficialSidebar({ officialRole, displayName, department }: Offic
       active: pathname.startsWith(lettersPath)
     }
   ];
+
+  // Admin-specific navigation items
+  const adminNavigationItems = [
+    {
+      title: "Officials",
+      href: officialsPath,
+      icon: UserCheck,
+      active: pathname.startsWith(officialsPath)
+    },
+    {
+      title: "Mentors",
+      href: mentorsPath,
+      icon: GraduationCap,
+      active: pathname.startsWith(mentorsPath)
+    }
+  ];
+
+  // Combine navigation items based on role
+  const navigationItems = officialRole === 'admin' 
+    ? [...baseNavigationItems, ...adminNavigationItems]
+    : baseNavigationItems;
 
   // Format role display name
   const formatRoleDisplay = (role: string) => {

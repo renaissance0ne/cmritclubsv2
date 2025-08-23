@@ -73,3 +73,37 @@ export const YEAR_NAMES: Record<number, string> = {
   3: '3rd Year',
   4: '4th Year'
 };
+
+// Official-related types
+export interface Official {
+  id: string;
+  clerk_id?: string;
+  display_name: string;
+  email: string;
+  dept?: Department;
+  official_role: HODRole | GeneralRole;
+  role: 'college_official' | 'admin';
+  status: 'pending' | 'approved' | 'rejected';
+  college: College;
+  invitation_sent_at?: string;
+  invitation_accepted_at?: string;
+  created_at: string;
+  updated_at: string;
+}
+
+// Mentor-related types
+export interface Mentor {
+  id: string;
+  clerk_id?: string;
+  display_name: string;
+  email: string;
+  dept: Department;
+  role: string;
+  college: College;
+  year?: 1 | 2 | 3 | 4;
+  status: 'pending' | 'approved' | 'rejected';
+  invitation_sent_at?: string;
+  invitation_accepted_at?: string;
+  created_at: string;
+  updated_at: string;
+}
