@@ -3,12 +3,17 @@ import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
 import { MentorsManagement } from '@/components/admin/mentors-management';
 
-export default async function MentorsPage({
-  params,
-}: {
-  params: { college: string; identifier: string };
-}) {
+interface MentorsPageProps {
+  params: Promise<{
+    college: string;
+    identifier: string;
+  }>;
+}
+
+export default async function MentorsPage({ params }: MentorsPageProps) {
   const { userId } = await auth();
+  const resolvedParams = await params;
+  const { college, identifier } = resolvedParams;
   
   if (!userId) {
     redirect('/sign-in');

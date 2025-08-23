@@ -3,12 +3,17 @@ import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
 import { OfficialsManagement } from '@/components/admin/officials-management';
 
-export default async function OfficialsPage({
-  params,
-}: {
-  params: { college: string; identifier: string };
-}) {
+interface OfficialsPageProps {
+  params: Promise<{
+    college: string;
+    identifier: string;
+  }>;
+}
+
+export default async function OfficialsPage({ params }: OfficialsPageProps) {
   const { userId } = await auth();
+  const resolvedParams = await params;
+  const { college, identifier } = resolvedParams;
   
   if (!userId) {
     redirect('/sign-in');
