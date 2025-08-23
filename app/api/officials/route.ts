@@ -20,11 +20,13 @@ export async function GET(request: NextRequest) {
       .eq('clerk_id', userId)
       .single();
 
+    console.log('Officials API - Current user check:', currentUser);
+
     if (!currentUser || currentUser.official_role !== 'admin') {
       return NextResponse.json({ error: 'Forbidden - Admin access required' }, { status: 403 });
     }
 
-    // Get all officials
+    // Get all officials (RLS is disabled for officials table)
     const { data: officials, error } = await supabase
       .from('officials')
       .select('*')
@@ -34,6 +36,9 @@ export async function GET(request: NextRequest) {
       console.error('Error fetching officials:', error);
       return NextResponse.json({ error: 'Failed to fetch officials' }, { status: 500 });
     }
+
+    console.log('Officials API - Found officials:', officials?.length || 0);
+    console.log('Officials API - Data:', JSON.stringify(officials, null, 2));
 
     return NextResponse.json({ officials });
   } catch (error) {
@@ -63,7 +68,7 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { display_name, email, dept, official_role, college } = body;
+    const { display_name, email, official_role, college } = body;
 
     // Validate required fields
     if (!display_name || !email || !official_role || !college) {
@@ -133,12 +138,12 @@ export async function POST(request: NextRequest) {
           clerk_id: null, // Will be updated via webhook when user accepts invitation
           display_name,
           email,
-          dept,
           official_role,
           role: official_role === 'admin' ? 'admin' : 'college_official',
           college,
           status: 'pending',
-          invitation_sent_at: new Date().toISOString()
+          invitation_sent_at: new Date().toISOString(),
+          invitation_accepted_at: null // Will be updated via webhook
         })
         .select()
         .single();

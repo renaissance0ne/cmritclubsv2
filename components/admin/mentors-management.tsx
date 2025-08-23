@@ -58,14 +58,22 @@ export function MentorsManagement() {
 
   const fetchMentors = async () => {
     try {
+      console.log('Frontend - Fetching mentors...');
       const response = await fetch('/api/mentors');
+      console.log('Frontend - Response status:', response.status);
+      
       if (response.ok) {
         const data = await response.json();
+        console.log('Frontend - Received data:', data);
+        console.log('Frontend - Mentors array:', data.mentors);
+        console.log('Frontend - Mentors length:', data.mentors?.length || 0);
         setMentors(data.mentors || []);
       } else {
+        const errorData = await response.json();
+        console.error('Frontend - API error:', errorData);
         toast({
           title: "Error",
-          description: "Failed to fetch mentors",
+          description: errorData.error || "Failed to fetch mentors",
           variant: "destructive",
         });
       }

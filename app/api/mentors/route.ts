@@ -20,12 +20,15 @@ export async function GET(request: NextRequest) {
       .eq('clerk_id', userId)
       .single();
 
+    console.log('Mentors API - Current user check:', currentUser);
+
     if (!currentUser || currentUser.official_role !== 'admin') {
       return NextResponse.json({ error: 'Forbidden - Admin access required' }, { status: 403 });
     }
 
-    // Get all mentors
-    const { data: mentors, error } = await supabase
+    // Use service client to bypass RLS for admin operations
+    const serviceSupabase = createServiceClient();
+    const { data: mentors, error } = await serviceSupabase
       .from('mentors')
       .select('*')
       .order('created_at', { ascending: false });
@@ -34,6 +37,9 @@ export async function GET(request: NextRequest) {
       console.error('Error fetching mentors:', error);
       return NextResponse.json({ error: 'Failed to fetch mentors' }, { status: 500 });
     }
+
+    console.log('Mentors API - Found mentors:', mentors?.length || 0);
+    console.log('Mentors API - Data:', JSON.stringify(mentors, null, 2));
 
     return NextResponse.json({ mentors });
   } catch (error) {

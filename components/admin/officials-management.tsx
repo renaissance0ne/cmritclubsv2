@@ -44,7 +44,6 @@ export function OfficialsManagement() {
   const [formData, setFormData] = useState({
     display_name: '',
     email: '',
-    dept: '',
     official_role: '',
     college: 'cmrit'
   });
@@ -57,14 +56,22 @@ export function OfficialsManagement() {
 
   const fetchOfficials = async () => {
     try {
+      console.log('Frontend - Fetching officials...');
       const response = await fetch('/api/officials');
+      console.log('Frontend - Response status:', response.status);
+      
       if (response.ok) {
         const data = await response.json();
+        console.log('Frontend - Received data:', data);
+        console.log('Frontend - Officials array:', data.officials);
+        console.log('Frontend - Officials length:', data.officials?.length || 0);
         setOfficials(data.officials || []);
       } else {
+        const errorData = await response.json();
+        console.error('Frontend - API error:', errorData);
         toast({
           title: "Error",
-          description: "Failed to fetch officials",
+          description: errorData.error || "Failed to fetch officials",
           variant: "destructive",
         });
       }
@@ -102,7 +109,6 @@ export function OfficialsManagement() {
         setFormData({
           display_name: '',
           email: '',
-          dept: '',
           official_role: '',
           college: 'cmrit'
         });
@@ -275,27 +281,6 @@ export function OfficialsManagement() {
                     </SelectContent>
                   </Select>
                 </div>
-                {formData.official_role.includes('_hod') && (
-                  <div className="grid gap-2">
-                    <Label htmlFor="dept">Department</Label>
-                    <Select
-                      value={formData.dept}
-                      onValueChange={(value) => setFormData({ ...formData, dept: value })}
-                      required
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select department" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {VALID_DEPARTMENTS.map((dept) => (
-                          <SelectItem key={dept} value={dept}>
-                            {DEPARTMENT_NAMES[dept]}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                )}
               </div>
               <DialogFooter>
                 <Button type="submit" disabled={submitting}>
@@ -378,7 +363,6 @@ export function OfficialsManagement() {
                 <TableHead>Name</TableHead>
                 <TableHead>Email</TableHead>
                 <TableHead>Role</TableHead>
-                <TableHead>Department</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead>Created</TableHead>
                 <TableHead className="text-right">Actions</TableHead>
@@ -390,9 +374,6 @@ export function OfficialsManagement() {
                   <TableCell className="font-medium">{official.display_name}</TableCell>
                   <TableCell>{official.email}</TableCell>
                   <TableCell>{formatRole(official.official_role)}</TableCell>
-                  <TableCell>
-                    {official.dept ? DEPARTMENT_NAMES[official.dept as keyof typeof DEPARTMENT_NAMES] : '-'}
-                  </TableCell>
                   <TableCell>{getStatusBadge(official.status, official.clerk_id)}</TableCell>
                   <TableCell>{new Date(official.created_at).toLocaleDateString()}</TableCell>
                   <TableCell className="text-right">
