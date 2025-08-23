@@ -8,8 +8,9 @@ const supabase = createClient(
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { club_id: string } }
+  { params }: { params: Promise<{ club_id: string }> }
 ) {
+  const resolvedParams = await params;
   try {
     const { searchParams } = new URL(request.url);
     const college = searchParams.get('college');
@@ -24,7 +25,7 @@ export async function GET(
       );
     }
 
-    const clubIdentifier = decodeURIComponent(params.club_id);
+    const clubIdentifier = decodeURIComponent(resolvedParams.club_id);
     
     // Check if the identifier is a UUID (club_id) or a club name
     const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(clubIdentifier);
