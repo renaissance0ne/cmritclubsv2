@@ -1,31 +1,33 @@
-import { AuthButtons } from "@/components/ui/auth-buttons"
-import { HeroSection } from "@/components/ui/hero"
-import { auth } from "@clerk/nextjs/server"
+import { auth } from "@clerk/nextjs/server";
+import LandingPageClient from "@/components/landing/LandingPageClient";
 
-export default async function Home() {
-  const { userId } = await auth()
-  const isLoggedIn = !!userId
-  
-  return (
-    <HeroSection
-      title="cmritclubs"
-      subtitle={{
-        regular: "Streamline your college's",
-        gradient: " event approvals digitally",
-      }}
-      description="Replace manual event permission workflows with a transparent, automated system. Connect clubs, mentors, and college officials in one unified platform for seamless event management."
-      authButtons={<AuthButtons isLoggedIn={isLoggedIn} />}
-      bottomImage={{
-        light: "https://www.launchuicomponents.com/app-light.png",
-        dark: "https://www.launchuicomponents.com/app-dark.png",
-      }}
-      gridOptions={{
-        angle: 65,
-        opacity: 0.4,
-        cellSize: 50,
-        lightLineColor: "#4a4a4a",
-        darkLineColor: "#2a2a2a",
-      }}
-    />
-  )
+export default async function LandingPage() {
+  const { userId, sessionClaims } = await auth();
+
+  let redirectPath = "/sign-up";
+
+  if (userId) {
+    const { role, college, department, official_role } = sessionClaims?.publicMetadata as {
+      role?: string;
+      college?: string;
+      department?: string;
+      official_role?: string;
+    } || {};
+
+    if (role === "Official") {
+      if (college && official_role) {
+        if (department) {
+          redirectPath = `/${college}/hod/${official_role}/dashboard`;
+        } else {
+          redirectPath = `/${college}/official/${official_role}/dashboard`;
+        }
+      } else {
+        redirectPath = "/dashboard"; // Fallback for officials with incomplete data
+      }
+    } else {
+      redirectPath = "/dashboard"; // Default for club leaders
+    }
+  }
+
+  return <LandingPageClient redirectPath={redirectPath} />;
 }
