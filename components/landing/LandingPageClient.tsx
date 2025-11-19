@@ -4,6 +4,7 @@ import React from "react";
 import { motion, Variants } from "framer-motion";
 import { ArrowRight, Layout, PieChart, Users } from "lucide-react";
 import { useRouter } from "next/navigation";
+import { SignedIn, SignedOut, UserButton } from "@clerk/nextjs";
 
 // --- Reusable Button Component ---
 const AuthRedirectButton = ({ href, className, children }: { href: string; className: string; children: React.ReactNode }) => {
@@ -50,12 +51,19 @@ const Navbar = ({ redirectPath }: { redirectPath: string }) => {
           <a href="#" className="hover:text-black">Contact Us</a>
         </div>
 
-        <AuthRedirectButton 
-          href={redirectPath} 
-          className="rounded-full bg-black px-5 py-2 text-sm font-semibold text-white transition-transform hover:scale-105 hover:bg-gray-800"
-        >
-          Try cmritclubs
-        </AuthRedirectButton>
+        <div className="ml-auto flex items-center gap-4">
+          <SignedOut>
+            <AuthRedirectButton 
+              href={redirectPath} 
+              className="rounded-full bg-black px-5 py-2 text-sm font-semibold text-white transition-transform hover:scale-105 hover:bg-gray-800"
+            >
+              Try cmritclubs
+            </AuthRedirectButton>
+          </SignedOut>
+          <SignedIn>
+            <UserButton afterSignOutUrl="/" />
+          </SignedIn>
+        </div>
       </div>
     </motion.nav>
   );
